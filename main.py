@@ -72,6 +72,7 @@ DIRECTIONS = [LEFT, RIGHT, UP, DOWN]
 
 current_location = [0, ROWS - 1]
 start = False
+returning = False
 
 pygame.init()
 FONT = pygame.font.Font(None, 20)
@@ -323,8 +324,8 @@ class TextInputBox:
 
 floodfill_gen: PeekableGenerator | None = None
 
-def floodfill(cells: CellCollection, walls: WallCollection, use_limited: bool = False):
-    goal = cells.goal()
+def floodfill(cells: CellCollection, walls: WallCollection, use_limited: bool = False, targets=None):
+    goal = cells.goal() if targets is None else targets
     for cell in cells.cells:
         cell.value = 65535
         cell.bg_color = CELL_BG_COLOR
@@ -350,9 +351,9 @@ def floodfill(cells: CellCollection, walls: WallCollection, use_limited: bool = 
     if last_cell is not None:
         cells.set_bgcolor(last_cell[0], last_cell[1], get_blue_color(cells.get_value(last_cell[0], last_cell[1])))
 
-def start_floodfill(cells: CellCollection, walls: WallCollection, use_limited: bool = False):
+def start_floodfill(cells: CellCollection, walls: WallCollection, use_limited: bool = False, targets=None):
     global floodfill_gen, start
-    floodfill_gen = PeekableGenerator(floodfill(cells, walls, use_limited))
+    floodfill_gen = PeekableGenerator(floodfill(cells, walls, use_limited, targets))
     start = False
 
 def run_whole_steps():
@@ -405,11 +406,23 @@ def car_observe(walls: WallCollection):
         print(current_x, current_y, direction, is_valid)
 
 def car_step(walls: WallCollection, cells: CellCollection):
+    global returning
     car_observe(walls)
-    if current_location not in cells.goal():
+    
+    goals = cells.goal()
+    origin = [[0, ROWS - 1]]
+    
+    target_locs = origin if returning else goals
+    
+    if current_location in target_locs:
+        returning = not returning
+        target_locs = origin if returning else goals
+        start_floodfill(cells, walls, use_limited=True, targets=target_locs)
+        run_whole_steps()
+    else:
         car_move(walls, cells)
         car_observe(walls)
-        start_floodfill(cells, walls, use_limited=True)
+        start_floodfill(cells, walls, use_limited=True, targets=target_locs)
         run_whole_steps()
 
 def draw_circle_alpha(surface, color, center, radius):
@@ -420,14 +433,15 @@ def draw_circle_alpha(surface, color, center, radius):
 
 def draw_car_loc():
     radius = CELL_SIZE // 4
-    x = MARGIN + (WALL_SIZE + CELL_SIZE) * current_location[0] + CELL_SIZE // 2
-    y = MARGIN + (WALL_SIZE + CELL_SIZE) * current_location[1] + CELL_SIZE // 2
+    x = MARGIN + (WALL_SIZE + CELL_SIZE) * current_location[0] + (CELL_SIZE + WALL_SIZE) // 2
+    y = MARGIN + (WALL_SIZE + CELL_SIZE) * current_location[1] + (CELL_SIZE + WALL_SIZE) // 2
     # pygame.draw.circle(screen, RED, (x, y), radius, 0)
     draw_circle_alpha(screen, (255, 0, 0, 127), (x, y), radius)
 
 def reset():
-    global current_location
+    global current_location, returning
     current_location = [0, ROWS - 1]
+    returning = False
     start_floodfill(cells, walls)
     for w in walls.limited_walls:
         w.block[0] = False
