@@ -294,7 +294,7 @@ class PeekableGenerator:
         return result
 
 class TextInputBox:
-    def __init__(self, x, y, width, font, screen, color=BLACK, bg_color=WHITE):
+    def __init__(self, x, y, width, font, screen, color=BLACK, bg_color=WHITE, event_handler=None):
         self.x = x
         self.y = y
         self.width = width
@@ -305,6 +305,7 @@ class TextInputBox:
         self.active = False
         self.value = 0
         self.rect = pygame.Rect(x, y, width, 20)
+        self.event_handler = event_handler
 
     def draw(self):
         text_surface = FONT.render(str(self.value), True, self.color)
@@ -317,6 +318,8 @@ class TextInputBox:
         if event.type == pygame.KEYDOWN and self.active:
             if event.key == pygame.K_RETURN:
                 self.active = False
+                if self.event_handler is not None:
+                    self.event_handler(self.value)
             elif event.key == pygame.K_BACKSPACE:
                 self.value //= 10
             elif event.unicode in "0123456789":
@@ -447,13 +450,21 @@ def reset():
         w.block[0] = False
         w.block[1] = False
 
+def set_cols(x):
+    global COLS
+    COLS = x
+
+def set_rows(x):
+    global ROWS
+    ROWS = x
 
 button = Button(MARGIN + BUTTON_PADDING, board_area.bottom + BUTTON_PADDING, text="Reset", callback_fn=reset)
 button2 = Button(MARGIN + BUTTON_PADDING * 3 + BUTTON_WIDTH, board_area.bottom + BUTTON_PADDING, text="Floodfill Real", callback_fn=run_whole_steps)
 button3 = Button(MARGIN + BUTTON_PADDING * 5 + BUTTON_WIDTH * 2, board_area.bottom + BUTTON_PADDING, text="Floodfill Step", callback_fn=step_func)
 button4 = Button(MARGIN + BUTTON_PADDING * 7 + BUTTON_WIDTH * 3, board_area.bottom + BUTTON_PADDING, text="Random Walls", callback_fn=partial(random_walls, walls))
 button5 = Button(MARGIN + BUTTON_PADDING * 9 + BUTTON_WIDTH * 4, board_area.bottom + BUTTON_PADDING, text="Car Step", callback_fn=partial(car_step, walls, cells))
-text_box = TextInputBox(MARGIN + BUTTON_PADDING * 11 + BUTTON_WIDTH * 5, board_area.bottom + BUTTON_PADDING, 200, FONT, screen)
+text_box = TextInputBox(MARGIN + BUTTON_PADDING * 11 + BUTTON_WIDTH * 5, board_area.bottom + BUTTON_PADDING, 100, FONT, screen, event_handler=set_cols)
+text_box2 = TextInputBox(MARGIN + BUTTON_PADDING * 11 + BUTTON_WIDTH * 5 + 150, board_area.bottom + BUTTON_PADDING, 100, FONT, screen, event_handler=set_rows)
 
 buttons.append(button)
 buttons.append(button2)
@@ -471,7 +482,8 @@ async def main():
             if event.type == pygame.QUIT:
                 running = False
             text_box.update(event)
-
+            text_box2.update(event)
+            
         walls.draw()
         cells.draw(walls)
         draw_car_loc()
@@ -480,6 +492,7 @@ async def main():
             b.draw()
 
         text_box.draw()
+        text_box2.draw()
 
         pygame.display.flip()
 
