@@ -433,8 +433,8 @@ def draw_circle_alpha(surface, color, center, radius):
 
 def draw_car_loc():
     radius = CELL_SIZE // 4
-    x = MARGIN + (WALL_SIZE + CELL_SIZE) * current_location[0] + (CELL_SIZE + WALL_SIZE) // 2
-    y = MARGIN + (WALL_SIZE + CELL_SIZE) * current_location[1] + (CELL_SIZE + WALL_SIZE) // 2
+    x = MARGIN + (WALL_SIZE + CELL_SIZE) * current_location[0] + CELL_SIZE // 2
+    y = MARGIN + (WALL_SIZE + CELL_SIZE) * current_location[1] + CELL_SIZE // 2
     # pygame.draw.circle(screen, RED, (x, y), radius, 0)
     draw_circle_alpha(screen, (255, 0, 0, 127), (x, y), radius)
 
@@ -470,7 +470,7 @@ async def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            # text_box.update(event)
+            text_box.update(event)
 
         walls.draw()
         cells.draw(walls)
@@ -479,7 +479,7 @@ async def main():
         for b in buttons:
             b.draw()
 
-        # text_box.draw()
+        text_box.draw()
 
         pygame.display.flip()
 
